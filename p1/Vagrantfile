@@ -1,0 +1,3 @@
+# TODO: IOT-5
+Vagrant.configure("2") do |config|
+end

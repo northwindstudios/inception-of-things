@@ -10,3 +10,18 @@
 
 # macOS
 .DS_Store
+
+# vagrant
+.vagrant/
+*.box
+
+# logs
+*.log
+
+# kubernetes / k3s secrets
+*kubeconfig*
+*.kubeconfig
+node-token
+*token*.txt
+*.pem
+*.key
