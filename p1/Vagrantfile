@@ -1,3 +1,37 @@
-# TODO: IOT-5
+# TODO: IOT-5 (K3s server/agent). For now each VM only writes a hello-world.txt.
+LOGIN = "fnascime"
+BOX   = "debian/trixie64"
+
+MACHINES = {
+  "#{LOGIN}S"  => "192.168.56.110",
+  "#{LOGIN}SW" => "192.168.56.111",
+}
+
 Vagrant.configure("2") do |config|
+  config.vm.box = BOX
+  # libvirt would mount /vagrant over NFS (needs an NFS server on the host); scripts are uploaded by the provisioners instead
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  MACHINES.each do |name, ip|
+    config.vm.define name do |node|
+      node.vm.hostname = name
+      node.vm.network "private_network", ip: ip
+
+      node.vm.provider "virtualbox" do |v|
+        v.name   = name
+        v.cpus   = 1
+        v.memory = 1024
+      end
+
+      node.vm.provider "libvirt" do |v|
+        # Fedora's vagrant-libvirt defaults to qemu:///session, which can't create the private network
+        v.qemu_use_session = false
+        v.cpus   = 1
+        v.memory = 1024
+      end
+
+      node.vm.provision "shell", privileged: false,
+        inline: "echo hello-world > ~/hello-world.txt"
+    end
+  end
 end
