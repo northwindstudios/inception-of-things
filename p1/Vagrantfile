@@ -22,6 +22,8 @@ Vagrant.configure("2") do |config|
 
   config.vm.synced_folder ".", "/vagrant", disabled: true
 
+  config.vm.provision "shell", path: "scripts/ssh.sh"
+
   MACHINES.each do |name, machine|
     config.vm.define name do |node|
       node.vm.hostname = name
