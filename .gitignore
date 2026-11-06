@@ -25,3 +25,7 @@ node-token
 *token*.txt
 *.pem
 *.key
+
+# packer
+packer_cache/
+p1/confs/packer/output/
