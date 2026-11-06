@@ -21,6 +21,30 @@ Why:
 
 Exception: a laptop with Apple Silicon (arm64) cannot run `vagrant up` for this project. Work from that machine goes through SSH to the homelab (`docs/p1.md`, "Rodando num host remoto"). Any other team member needs an x86_64 machine with VT-x and VirtualBox to reproduce it.
 
+## Guest distribution and box source
+
+| Item | Choice |
+|------|--------|
+| Distribution | Debian 13 "trixie" (13.7), amd64, kernel 6.12 |
+| Box | `debian13`, built by us with Packer from the official netinst ISO, 418 MB |
+| `box_url` | `https://github.com/northwindstudios/inception-of-things/releases/download/box-debian-13.7.0/debian-13-virtualbox.box` |
+| `box_download_checksum` | SHA256 `e8c805aa360c91e0d35cd86dffbd58f0729fba3f43a2aa43f458cb6e9398c6c6` |
+
+Why:
+
+- **Debian is the stable release.** Debian 13 is the current stable. The image is small and the guests have 1 CPU and 1024 MB.
+- **We build the box.** Debian publishes no VirtualBox box (`debian/trixie64` is libvirt only). Rocky Linux 10 has an official VirtualBox box, but it needs an x86-64-v3 CPU and crashes at boot on the homelab (Celeron J1800). Debian runs on any x86-64 CPU.
+- **The box lives in this repo's Releases.** The subject says the HashiCorp registry is not guaranteed after 2026, so `config.vm.box_url` points to a GitHub Release asset, checked with SHA256.
+- **K3s fits.** The guest uses cgroup v2, which K3s supports, and has no swap, which the kubelet requires by default.
+
+Check it on a clean machine (an empty Vagrant home):
+
+```sh
+VAGRANT_HOME=$(mktemp -d) vagrant box add debian13 <box_url> --checksum <sha256> --checksum-type sha256
+```
+
+How the box is built and published is in `docs/p1.md`.
+
 ## Layout
 
 Each part has a `scripts/` folder (install/setup scripts) and a `confs/` folder (configuration files).
