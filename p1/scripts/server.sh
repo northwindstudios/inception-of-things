@@ -8,24 +8,33 @@ set -euo pipefail
 IFACE=$(ip -o -4 addr show | awk -v ip="$NODE_IP" '$4 ~ "^"ip"/" {print $2}')
 [ -n "$IFACE" ] || { echo "no interface has $NODE_IP" >&2; exit 1; }
 
+dest=/etc/rancher/k3s/join-token
+
 mkdir -p /etc/rancher/k3s
+
+changed=0
+if [ "$(cat "$dest" 2>/dev/null)" != "$K3S_TOKEN" ]; then
+  (umask 077; printf '%s\n' "$K3S_TOKEN" > "$dest")
+  changed=1
+fi
+chmod 600 "$dest"
+
 CONFIG=$(cat <<YAML
 node-ip: $NODE_IP
 advertise-address: $NODE_IP
 flannel-iface: $IFACE
 write-kubeconfig-mode: "0644"
-token: $K3S_TOKEN
+token-file: $dest
 YAML
 )
 
-changed=0
 if [ "$(cat /etc/rancher/k3s/config.yaml 2>/dev/null)" != "$CONFIG" ]; then
-  (umask 077; echo "$CONFIG" > /etc/rancher/k3s/config.yaml)
+  echo "$CONFIG" > /etc/rancher/k3s/config.yaml
   changed=1
 fi
-chmod 600 /etc/rancher/k3s/config.yaml
+chmod 644 /etc/rancher/k3s/config.yaml
 
-if ! command -v k3s >/dev/null || ! k3s --version | grep -qF "$K3S_VERSION"; then
+if ! command -v k3s >/dev/null || ! k3s --version | grep -F "$K3S_VERSION" >/dev/null; then
   curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="$K3S_VERSION" INSTALL_K3S_EXEC="server" sh -
 elif [ "$changed" = 1 ]; then
   systemctl restart k3s

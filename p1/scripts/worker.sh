@@ -44,7 +44,7 @@ until curl -ksf --max-time 5 "https://$SERVER_IP:6443/cacerts" >/dev/null; do
   sleep 2
 done
 
-if ! command -v k3s >/dev/null || ! k3s --version | grep -qF "$K3S_VERSION"; then
+if ! command -v k3s >/dev/null || ! k3s --version | grep -F "$K3S_VERSION" >/dev/null; then
   curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="$K3S_VERSION" INSTALL_K3S_EXEC="agent" INSTALL_K3S_SKIP_START=true sh -
   systemctl start --no-block k3s-agent
 elif [ "$changed" = 1 ]; then
