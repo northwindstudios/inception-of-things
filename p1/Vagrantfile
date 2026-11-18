@@ -1,3 +1,6 @@
+require "fileutils"
+require "securerandom"
+
 LOGIN = "fnascime"
 
 BOX        = "debian13"
@@ -7,6 +10,20 @@ BOX_SHA256 = "e8c805aa360c91e0d35cd86dffbd58f0729fba3f43a2aa43f458cb6e9398c6c6"
 K3S_VERSION = "v1.37.2+k3s1"
 
 box_url = ENV.fetch("BOX_URL", BOX_URL)
+
+TOKEN_FILE = File.join(__dir__, ".vagrant", "k3s-token")
+
+def k3s_token
+  return File.read(TOKEN_FILE).strip if File.exist?(TOKEN_FILE)
+  return "unused" if (ARGV & %w[up provision reload]).empty?
+
+  token = SecureRandom.hex(32)
+  FileUtils.mkdir_p(File.dirname(TOKEN_FILE))
+  File.write(TOKEN_FILE, token, perm: 0o600)
+  token
+end
+
+K3S_TOKEN = k3s_token
 
 MACHINES = {
   "#{LOGIN}S"  => { ip: "192.168.56.110", role: "server" },
@@ -24,6 +41,8 @@ Vagrant.configure("2") do |config|
 
   config.vm.synced_folder ".", "/vagrant", disabled: true
 
+  config.vagrant.sensitive = [K3S_TOKEN]
+
   config.vm.provision "shell", path: "scripts/ssh.sh"
 
   MACHINES.each do |name, machine|
@@ -38,7 +57,15 @@ Vagrant.configure("2") do |config|
       end
 
       node.vm.provision "shell", path: "scripts/#{machine[:role]}.sh",
-        env: { "NODE_IP" => machine[:ip], "K3S_VERSION" => K3S_VERSION }
+        env: { "NODE_IP" => machine[:ip], "K3S_VERSION" => K3S_VERSION, "K3S_TOKEN" => K3S_TOKEN }
+
+      # A new server means a new cluster, so it gets a new token.
+      if machine[:role] == "server"
+        node.trigger.after :destroy do |t|
+          t.name = "Remove the join token"
+          t.ruby { |_env, _machine| FileUtils.rm_f(TOKEN_FILE) }
+        end
+      end
     end
   end
 end
