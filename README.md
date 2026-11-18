@@ -8,15 +8,15 @@ The subject lets us pick the tools for the host machine and the Vagrant provider
 
 | Item | Choice |
 |------|--------|
-| Host | Homelab, Ubuntu 24.04, x86_64 with VT-x, 3.5 GiB of RAM (bare metal, reached over SSH) |
-| Hypervisor | VirtualBox 7.0.x on the host |
+| Host | Homelab, Ubuntu 25.10, x86_64 (Intel Core i5-10210U, 8 threads) with VT-x, 7 GiB of RAM (bare metal, reached over SSH through Tailscale) |
+| Hypervisor | VirtualBox 7.2.x on the host |
 | Vagrant provider | `virtualbox` (Vagrant 2.4.x) |
 
 Why:
 
 - **VirtualBox over libvirt/KVM.** It is the provider used in the subject's example, and the evaluation usually runs VirtualBox. One provider means one path to test. The Debian project only publishes a libvirt box, so we build our own VirtualBox box (see `docs/p1.md`).
 - **No nested virtualization.** The VMs run directly on the homelab, so nothing depends on a hypervisor inside another VM.
-- **Fits the memory.** P1 is 2 VMs of 1 GB each. The worker can drop to 512 MB if the host gets tight once K3s is installed.
+- **Fits the memory.** P1 is a 2 GB server and a 1 GB worker, 3 GB in total. The K3s server needs more than 1 GB: at 1 GB it ran out of memory and hung when the worker joined (see `docs/p1.md`, "Memória do servidor").
 - **x86_64 only.** VirtualBox does not run x86 guests on Apple Silicon. The Debian box is amd64, so there is no ARM path.
 
 Exception: a laptop with Apple Silicon (arm64) cannot run `vagrant up` for this project. Work from that machine goes through SSH to the homelab (`docs/p1.md`, "Rodando num host remoto"). Any other team member needs an x86_64 machine with VT-x and VirtualBox to reproduce it.
@@ -32,8 +32,8 @@ Exception: a laptop with Apple Silicon (arm64) cannot run `vagrant up` for this 
 
 Why:
 
-- **Debian is the stable release.** Debian 13 is the current stable. The image is small and the guests have 1 CPU and 1024 MB.
-- **We build the box.** Debian publishes no VirtualBox box (`debian/trixie64` is libvirt only). Rocky Linux 10 has an official VirtualBox box, but it needs an x86-64-v3 CPU and crashes at boot on the homelab (Celeron J1800). Debian runs on any x86-64 CPU.
+- **Debian is the stable release.** Debian 13 is the current stable. The image is small and the guests have 1 CPU each.
+- **We build the box.** Debian publishes no VirtualBox box (`debian/trixie64` is libvirt only). Rocky Linux 10 has an official VirtualBox box, but it needs an x86-64-v3 CPU and crashed at boot on our previous homelab (Celeron J1800). Debian runs on any x86-64 CPU.
 - **The box lives in this repo's Releases.** The subject says the HashiCorp registry is not guaranteed after 2026, so `config.vm.box_url` points to a GitHub Release asset, checked with SHA256.
 - **K3s fits.** The guest uses cgroup v2, which K3s supports, and has no swap, which the kubelet requires by default.
 
