@@ -4,6 +4,8 @@ BOX        = "debian13"
 BOX_URL    = "https://github.com/northwindstudios/inception-of-things/releases/download/box-debian-13.7.0/debian-13-virtualbox.box"
 BOX_SHA256 = "e8c805aa360c91e0d35cd86dffbd58f0729fba3f43a2aa43f458cb6e9398c6c6"
 
+K3S_VERSION = "v1.37.2+k3s1"
+
 box_url = ENV.fetch("BOX_URL", BOX_URL)
 
 MACHINES = {
@@ -35,7 +37,8 @@ Vagrant.configure("2") do |config|
         v.memory = 1024
       end
 
-      node.vm.provision "shell", path: "scripts/#{machine[:role]}.sh"
+      node.vm.provision "shell", path: "scripts/#{machine[:role]}.sh",
+        env: { "NODE_IP" => machine[:ip], "K3S_VERSION" => K3S_VERSION }
     end
   end
 end
